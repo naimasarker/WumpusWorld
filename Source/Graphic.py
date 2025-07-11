@@ -1,7 +1,10 @@
 import sys
+import subprocess
+import os
 from Map import *
 from Agent import *
 import Algorithms
+from Specification import *  # Ensure MAP_LIST and OUTPUT_LIST is accessible
 
 class Graphic:
     def __init__(self):
@@ -30,102 +33,147 @@ class Graphic:
         self.bg = pygame.transform.scale(self.bg, (SCREEN_WIDTH, SCREEN_HEIGHT))
         self.direct = 3
 
-    def running_draw(self):
-        self.screen.fill(WHITE)
-        self.map.draw(self.screen)
-        score = self.agent.get_score()
-        text = self.font.render('Your score: ' + str(score), True, BLACK)
-        textRect = text.get_rect()
-        textRect.center = (820, 25)
-        self.screen.blit(text, textRect)
-
-    def draw_button(self, surf, rect, button_color, text_color, text):
-        pygame.draw.rect(surf, button_color, rect)
-        text_surf = self.font.render(text, True, text_color)
-        text_rect = text_surf.get_rect()
-        text_rect.center = rect.center
-        self.screen.blit(text_surf, text_rect)
-
     def home_draw(self):
-        self.screen.fill(WHITE)
+        screen_width, screen_height = self.screen.get_size()
+        for y in range(screen_height):
+            ratio = y / screen_height
+            r = int(139 + ratio * 30)
+            g = int(69 + ratio * 50)
+            b = int(19 + ratio * 20)
+            color = (r, g, b)
+            pygame.draw.line(self.screen, color, (0, y), (screen_width, y))
+
+    def draw_button(self, surf, rect, is_hover, text):
+        base_color = (160, 82, 45)
+        hover_color = (205, 133, 63)
+        text_color = (255, 255, 240)
+        button_color = hover_color if is_hover else base_color
+        pygame.draw.rect(surf, button_color, rect, border_radius=10)
+        text_surf = self.font.render(text, True, text_color)
+        text_rect = text_surf.get_rect(center=rect.center)
+        surf.blit(text_surf, text_rect)
+
+    def reload_maps(self):
+        """Reload the map specifications"""
+        from importlib import reload
+        import Specification
+        reload(Specification)
+        global MAP_LIST, OUTPUT_LIST
+        MAP_LIST = Specification.MAP_LIST
+        OUTPUT_LIST = Specification.OUTPUT_LIST
 
     def home_event(self):
+        global MAP_LIST, OUTPUT_LIST
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
                 sys.exit()
             elif event.type == pygame.MOUSEBUTTONDOWN:
-                if 235 <= self.mouse[0] <= 735 and 120 <= self.mouse[1] <= 170:
-                    self.state = RUNNING
-                    self.map_i = 1
-                elif 235 <= self.mouse[0] <= 735 and 200 <= self.mouse[1] <= 250:
-                    self.state = RUNNING
-                    self.map_i = 2
-                elif 235 <= self.mouse[0] <= 735 and 280 <= self.mouse[1] <= 330:
-                    self.state = RUNNING
-                    self.map_i = 3
-                elif 235 <= self.mouse[0] <= 735 and 360 <= self.mouse[1] <= 410:
-                    self.state = RUNNING
-                    self.map_i = 4
-                elif 235 <= self.mouse[0] <= 735 and 440 <= self.mouse[1] <= 490:
-                    self.state = RUNNING
-                    self.map_i = 5
-                elif 235 <= self.mouse[0] <= 735 and 520 <= self.mouse[1] <= 570:
+                # Check for regular maps
+                for i in range(len(MAP_LIST)):
+                    if 235 <= self.mouse[0] <= 735 and (120 + i*80) <= self.mouse[1] <= (170 + i*80):
+                        self.state = RUNNING
+                        self.map_i = i + 1
+                        return
+
+                # Check for custom map button
+                custom_map_y = 120 + len(MAP_LIST)*80
+                if 235 <= self.mouse[0] <= 735 and custom_map_y <= self.mouse[1] <= (custom_map_y + 50):
+                    # Check if custom map exists
+                    custom_map_path = os.path.join("Assets", "Input", "custom_map.txt")
+                    if os.path.exists(custom_map_path):
+                        self.state = RUNNING
+                        self.map_i = "custom"  # Special identifier for custom map
+                        return
+                    else:
+                        print("Custom map not found! Please create one first.")
+
+                # Create Map button
+                create_map_y = 120 + (len(MAP_LIST) + 1)*80
+                if 235 <= self.mouse[0] <= 735 and create_map_y <= self.mouse[1] <= (create_map_y + 50):
+                    # Get the directory where this script is located
+                    current_dir = os.path.dirname(os.path.abspath(__file__))
+                    map_editor_path = os.path.join(current_dir, 'map_editor.py')
+                    
+                    # Check if map_editor.py exists in the current directory
+                    if os.path.exists(map_editor_path):
+                        subprocess.call([sys.executable, map_editor_path])
+                    else:
+                        # Try the parent directory (in case it's in the root)
+                        parent_dir = os.path.dirname(current_dir)
+                        map_editor_path = os.path.join(parent_dir, 'map_editor.py')
+                        if os.path.exists(map_editor_path):
+                            subprocess.call([sys.executable, map_editor_path])
+                        else:
+                            print(f"Error: map_editor.py not found in {current_dir} or {parent_dir}")
+                            return
+                    
+                    # Reload maps after editor closes
+                    self.reload_maps()
+
+                # Exit button
+                exit_y = 120 + (len(MAP_LIST) + 2)*80
+                if 235 <= self.mouse[0] <= 735 and exit_y <= self.mouse[1] <= (exit_y + 50):
                     pygame.quit()
                     sys.exit()
 
-            self.mouse = pygame.mouse.get_pos()
-            if 235 <= self.mouse[0] <= 735 and 120 <= self.mouse[1] <= 170:
-                self.draw_button(self.screen, LEVEL_1_POS, DARK_GREY, RED, "MAP 1")
-            else:
-                self.draw_button(self.screen, LEVEL_1_POS, LIGHT_GREY, BLACK, "MAP 1")
-            if 235 <= self.mouse[0] <= 735 and 200 <= self.mouse[1] <= 250:
-                self.draw_button(self.screen, LEVEL_2_POS, DARK_GREY, RED, "MAP 2")
-            else:
-                self.draw_button(self.screen, LEVEL_2_POS, LIGHT_GREY, BLACK, "MAP 2")
-            if 235 <= self.mouse[0] <= 735 and 280 <= self.mouse[1] <= 330:
-                self.draw_button(self.screen, LEVEL_3_POS, DARK_GREY, RED, "MAP 3")
-            else:
-                self.draw_button(self.screen, LEVEL_3_POS, LIGHT_GREY, BLACK, "MAP 3")
-            if 235 <= self.mouse[0] <= 735 and 360 <= self.mouse[1] <= 410:
-                self.draw_button(self.screen, LEVEL_4_POS, DARK_GREY, RED, "MAP 4")
-            else:
-                self.draw_button(self.screen, LEVEL_4_POS, LIGHT_GREY, BLACK, "MAP 4")
-            if 235 <= self.mouse[0] <= 735 and 440 <= self.mouse[1] <= 490:
-                self.draw_button(self.screen, LEVEL_5_POS, DARK_GREY, RED, "MAP 5")
-            else:
-                self.draw_button(self.screen, LEVEL_5_POS, LIGHT_GREY, BLACK, "MAP 5")
-            if 235 <= self.mouse[0] <= 735 and 520 <= self.mouse[1] <= 570:
-                self.draw_button(self.screen, EXIT_POS, DARK_GREY, RED, "EXIT")
-            else:
-                self.draw_button(self.screen, EXIT_POS, LIGHT_GREY, BLACK, "EXIT")
-            pygame.display.update()
+        self.mouse = pygame.mouse.get_pos()
 
-    def win_draw(self):
-        self.screen.fill(WHITE)
-        self.screen.blit(self.bg, (0, 0))
+        # Draw regular map buttons
+        for i in range(len(MAP_LIST)):
+            is_hover = 235 <= self.mouse[0] <= 735 and (120 + i*80) <= self.mouse[1] <= (170 + i*80)
+            self.draw_button(self.screen, pygame.Rect(235, 120 + i*80, 500, 50), is_hover, f"MAP {i+1}")
 
-        if self.state == WIN:
-            text = self.victory.render('VICTORY!!!', True, BLACK)
-        elif self.state == TRYBEST:
-            text = self.victory.render('TRY BEST!!!', True, BLACK)
+        # Draw custom map button
+        custom_map_y = 120 + len(MAP_LIST)*80
+        custom_hover = 235 <= self.mouse[0] <= 735 and custom_map_y <= self.mouse[1] <= (custom_map_y + 50)
+        custom_map_exists = os.path.exists(os.path.join("Assets", "Input", "custom_map.txt"))
+        custom_text = "CUSTOM MAP" if custom_map_exists else "CUSTOM MAP (Not Found)"
+        self.draw_button(self.screen, pygame.Rect(235, custom_map_y, 500, 50), custom_hover, custom_text)
 
-        textRect = text.get_rect()
-        textRect.center = (500, 50)
-        self.screen.blit(text, textRect)
-        score = self.agent.get_score()
-        text = self.victory.render('Your score: ' + str(score), True, BLACK)
-        textRect.center = (450, 100)
-        self.screen.blit(text, textRect)
+        # Draw Create Map Button
+        create_map_y = 120 + (len(MAP_LIST) + 1)*80
+        create_hover = 235 <= self.mouse[0] <= 735 and create_map_y <= self.mouse[1] <= (create_map_y + 50)
+        self.draw_button(self.screen, pygame.Rect(235, create_map_y, 500, 50), create_hover, "Create Map")
 
-    def win_event(self):
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                pygame.quit()
-                sys.exit()
+        # Draw Exit button
+        exit_y = 120 + (len(MAP_LIST) + 2)*80
+        exit_hover = 235 <= self.mouse[0] <= 735 and exit_y <= self.mouse[1] <= (exit_y + 50)
+        self.draw_button(self.screen, pygame.Rect(235, exit_y, 500, 50), exit_hover, "EXIT")
+
         pygame.display.update()
-        pygame.time.delay(200)
-        self.state = MAP
+
+    def load_custom_map(self):
+        """Load custom map from file"""
+        custom_map_path = os.path.join("Assets", "Input", "custom_map.txt")
+        custom_output_path = os.path.join("Assets", "Output", "custom_result.txt")
+        
+        if not os.path.exists(custom_map_path):
+            print("Custom map file not found!")
+            return None, None
+            
+        try:
+            with open(custom_map_path, 'r') as f:
+                lines = f.readlines()
+                
+            # Parse the file
+            size = int(lines[0].strip())
+            map_data = []
+            
+            for i in range(1, size + 1):
+                row = lines[i].strip().split('.')
+                map_data.append(row)
+            
+            # Check if output file exists, if not create empty one
+            if not os.path.exists(custom_output_path):
+                with open(custom_output_path, 'w') as f:
+                    f.write("")
+            
+            return map_data, custom_output_path
+            
+        except Exception as e:
+            print(f"Error loading custom map: {e}")
+            return None, None
 
     def run(self):
         while True:
@@ -136,8 +184,23 @@ class Graphic:
             elif self.state == RUNNING:
                 self.state = TRYBEST
 
-                action_list, cave_cell, cell_matrix = Algorithms.AgentBrain(MAP_LIST[self.map_i - 1], OUTPUT_LIST[self.map_i - 1]).solve_wumpus_world()
+                # Handle custom map
+                if self.map_i == "custom":
+                    custom_map_path = os.path.join("Assets", "Input", "custom_map.txt")
+                    custom_output = os.path.join("Assets", "Output", "custom_result.txt")
+                    if not os.path.exists(custom_map_path):
+                        print("Custom map file not found!")
+                        self.state = MAP
+                        continue
+                    
+                    # Pass the file path instead of parsed map data
+                    action_list, cave_cell, cell_matrix = Algorithms.AgentBrain(custom_map_path, custom_output).solve_wumpus_world()
+                else:
+                    # Use regular map
+                    action_list, cave_cell, cell_matrix = Algorithms.AgentBrain(MAP_LIST[self.map_i - 1], OUTPUT_LIST[self.map_i - 1]).solve_wumpus_world()
+                
                 map_pos = cave_cell.map_pos
+            # ... rest of the code remains unchanged
 
                 self.map = Map((len(cell_matrix) - map_pos[1] + 1, map_pos[0]))
                 self.arrow = Arrow()
@@ -172,7 +235,6 @@ class Graphic:
                 for action in action_list:
                     pygame.time.delay(SPEED)
                     self.display_action(action)
-                    # print(action)
 
                     if action == Algorithms.Action.KILL_ALL_WUMPUS_AND_GRAB_ALL_FOOD:
                         self.state = WIN
@@ -192,8 +254,35 @@ class Graphic:
 
             self.clock.tick(60)
 
+    # Keep all other methods exactly the same as before...
+    def win_draw(self):
+        self.screen.fill(WHITE)
+        self.screen.blit(self.bg, (0, 0))
+
+        if self.state == WIN:
+            text = self.victory.render('VICTORY!!!', True, BLACK)
+        elif self.state == TRYBEST:
+            text = self.victory.render('TRY BEST!!!', True, BLACK)
+
+        textRect = text.get_rect()
+        textRect.center = (500, 50)
+        self.screen.blit(text, textRect)
+        score = self.agent.get_score()
+        text = self.victory.render('Your score: ' + str(score), True, BLACK)
+        textRect.center = (450, 100)
+        self.screen.blit(text, textRect)
+
+    def win_event(self):
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+        pygame.display.update()
+        pygame.time.delay(200)
+        self.state = MAP
 
     def display_action(self, action: Algorithms.Action):
+        # Keep the same implementation as before
         if action == Algorithms.Action.TURN_LEFT:
             self.direct = self.agent.turn_left()
             self.all_sprites.update()
@@ -269,7 +358,6 @@ class Graphic:
             pygame.display.update()
             pygame.time.delay(500)
         elif action == Algorithms.Action.KILL_WUMPUS:
-
             i, j = self.agent.get_pos()
             if self.direct == 0:
                 i -= 1
@@ -307,7 +395,6 @@ class Graphic:
             pygame.display.update()
             self.state = GAMEOVER
         elif action == Algorithms.Action.KILL_ALL_WUMPUS_AND_GRAB_ALL_FOOD:
-            #
             self.state = WIN
             pass
         elif action == Algorithms.Action.CLIMB_OUT_OF_THE_CAVE:

@@ -38,7 +38,8 @@ MAP_LIST = [
     os.path.join(BASE_DIR, 'Assets', 'Input', 'map_2.txt'),
     os.path.join(BASE_DIR, 'Assets', 'Input', 'map_3.txt'),
     os.path.join(BASE_DIR, 'Assets', 'Input', 'map_4.txt'),
-    os.path.join(BASE_DIR, 'Assets', 'Input', 'map_5.txt')
+    os.path.join(BASE_DIR, 'Assets', 'Input', 'map_5.txt'),
+    os.path.join(BASE_DIR, 'Assets', 'Input', 'map_6.txt')
 ]
 MAP_NUM = len(MAP_LIST)
 
@@ -48,7 +49,8 @@ OUTPUT_LIST = [
     os.path.join(BASE_DIR, 'Assets', 'Output', 'result_2.txt'),
     os.path.join(BASE_DIR, 'Assets', 'Output', 'result_3.txt'),
     os.path.join(BASE_DIR, 'Assets', 'Output', 'result_4.txt'),
-    os.path.join(BASE_DIR, 'Assets', 'Output', 'result_5.txt')
+    os.path.join(BASE_DIR, 'Assets', 'Output', 'result_5.txt'),
+    os.path.join(BASE_DIR, 'Assets', 'Output', 'result_6.txt')
 ]
 
 # Fonts
@@ -73,4 +75,5 @@ LEVEL_2_POS = pygame.Rect(235, 200, 500, 50)
 LEVEL_3_POS = pygame.Rect(235, 280, 500, 50)
 LEVEL_4_POS = pygame.Rect(235, 360, 500, 50)
 LEVEL_5_POS = pygame.Rect(235, 440, 500, 50)
-EXIT_POS = pygame.Rect(235, 520, 500, 50)
+LEVEL_6_POS = pygame.Rect(235, 520, 500, 50)
+EXIT_POS = pygame.Rect(235, 600, 500, 50)
