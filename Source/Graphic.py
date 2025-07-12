@@ -254,7 +254,8 @@ class Graphic:
 
             self.clock.tick(60)
 
-    # Keep all other methods exactly the same as before...
+    # ... keep other methods (e.g., display_action) unchanged ...
+
     def win_draw(self):
         self.screen.fill(WHITE)
         self.screen.blit(self.bg, (0, 0))
@@ -273,13 +274,25 @@ class Graphic:
         self.screen.blit(text, textRect)
 
     def win_event(self):
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                pygame.quit()
-                sys.exit()
-        pygame.display.update()
-        pygame.time.delay(200)
-        self.state = MAP
+        start_time = pygame.time.get_ticks()  # Record the start time in milliseconds
+        while True:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    sys.exit()
+                elif event.type == pygame.MOUSEBUTTONDOWN:
+                    # Transition to MAP state if the user clicks
+                    self.state = MAP
+                    return
+
+            # Check if 1 minute (60,000 milliseconds) has elapsed
+            current_time = pygame.time.get_ticks()
+            if current_time - start_time >= 60000:  # 60,000 ms = 1 minute
+                self.state = MAP
+                return
+
+            pygame.display.update()
+            self.clock.tick(60)  # Maintain 60 FPS to keep the window responsive
 
     def display_action(self, action: Algorithms.Action):
         # Keep the same implementation as before
@@ -292,6 +305,7 @@ class Graphic:
             self.wumpus.update(self.screen, self.noti, temp)
             self.pit.update(self.screen, self.noti, temp)
             pygame.display.update()
+        # ... rest of the method remains unchanged ...
         elif action == Algorithms.Action.TURN_RIGHT:
             self.direct = self.agent.turn_right()
             self.all_sprites.update()
@@ -440,3 +454,4 @@ class Graphic:
             pass
         else:
             raise TypeError("Error: " + self.display_action.__name__)
+
