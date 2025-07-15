@@ -144,7 +144,7 @@ def draw_grid():
         screen.blit(instr_text, (legend_x, instr_y))
         instr_y += 18
     
-    # Draw bottom panel
+    
     pygame.draw.rect(screen, BROWN, (0, SCREEN_HEIGHT - 80, SCREEN_WIDTH, 80))
     text = big_font.render("Press S to Save as Custom Map | C to Clear | Esc to Cancel", True, WHITE)
     screen.blit(text, (20, SCREEN_HEIGHT - 60))
@@ -158,31 +158,37 @@ def save_map():
     # Create a copy of the grid for output
     output_grid = [row[:] for row in grid]
 
-    # Add S for W and B for P in adjacent cells
+    # Dictionary to track adjacent effects
+    adj_effects = {}
     for row in range(GRID_HEIGHT):
         for col in range(GRID_WIDTH):
             if output_grid[row][col] == "W":
-                # Add S to adjacent cells (up, down, left, right)
+                # Add stench (S) to adjacent cells
                 for dr, dc in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
                     new_row, new_col = row + dr, col + dc
                     if 0 <= new_row < GRID_HEIGHT and 0 <= new_col < GRID_WIDTH:
-                        current = output_grid[new_row][new_col]
-                        # If cell is '.', replace with 'S'; otherwise, append 'S'
-                        if current == ".":
-                            output_grid[new_row][new_col] = "S"
-                        elif current in ["A", "P", "G", "W", "-", "B", "S"]:
-                            output_grid[new_row][new_col] = current + "S"
+                        pos = (new_row, new_col)
+                        adj_effects[pos] = adj_effects.get(pos, "") + "S"
             elif output_grid[row][col] == "P":
-                # Add B to adjacent cells (up, down, left, right)
+                # Add breeze (B) to adjacent cells
                 for dr, dc in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
                     new_row, new_col = row + dr, col + dc
                     if 0 <= new_row < GRID_HEIGHT and 0 <= new_col < GRID_WIDTH:
-                        current = output_grid[new_row][new_col]
-                        # If cell is '.', replace with 'B'; otherwise, append 'B'
-                        if current == ".":
-                            output_grid[new_row][new_col] = "B"
-                        elif current in ["A", "G", "W", "P", "-", "B", "S"]:
-                            output_grid[new_row][new_col] = current + "B"
+                        pos = (new_row, new_col)
+                        adj_effects[pos] = adj_effects.get(pos, "") + "B"
+
+    # Apply effects to the grid
+    for (row, col), effects in adj_effects.items():
+        current = output_grid[row][col]
+        if current in ["A", "P", "G", "W", "-", "B", "S"]:
+            # Combine effects without duplicating
+            unique_effects = "".join(sorted(set(effects)))
+            if current == ".":
+                output_grid[row][col] = unique_effects
+            else:
+                output_grid[row][col] = current + unique_effects
+        elif current == ".":
+            output_grid[row][col] = effects
 
     # Replace all remaining '.' with '-'
     for row in range(GRID_HEIGHT):

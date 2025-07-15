@@ -9,19 +9,18 @@ from Agent import *
 from Graphic import *
 from Algorithms import *
 
-# Enhanced color palette for consistent styling
 @dataclass
 class GameColors:
-    PRIMARY = (48, 25, 52)
-    SECONDARY = (101, 67, 133)
-    ACCENT = (255, 195, 0)
-    BACKGROUND = (24, 12, 26)
-    TEXT_PRIMARY = (255, 255, 255)
+    PRIMARY = (255, 99, 71)  # Tomato red
+    SECONDARY = (255, 182, 193)  # Light pink
+    ACCENT = (255, 215, 0)  # Gold for contrast
+    BACKGROUND = (30, 50, 30)  # Deep green
+    TEXT_PRIMARY = (255, 255, 255)  # White for readability
     TEXT_SECONDARY = (180, 180, 180)
-    BUTTON_HOVER = (143, 95, 188)
-    BUTTON_ACTIVE = (81, 54, 107)
+    BUTTON_HOVER = (255, 105, 97)  # Coral
+    BUTTON_ACTIVE = (200, 50, 50)  # Dark red
     TRANSPARENT = (0, 0, 0, 0)
-
+    LIGHT_ACCENT = (255, 230, 180)
 class ParticleSystem:
     def __init__(self):
         self.particles: List[dict] = []
@@ -108,27 +107,34 @@ class EnhancedGraphic(Graphic):
         self.buttons = []
         self.score_animation = {'current': 0, 'target': 0}
         self.setup_buttons()
+        self.action_text = ""  # Store action feedback
         
     def setup_buttons(self):
-        button_width = 500
-        button_height = 50
-        start_y = 120
-        spacing = 80
-        
-        for i, text in enumerate(["MAP 1", "MAP 2", "MAP 3", "MAP 4", "MAP 5", "EXIT"]):
+        self.buttons = []
+        # Grid layout for MAP buttons (2x3 grid)
+        grid_x_start = (SCREEN_WIDTH - 600) // 2  # 600 = 3 * 200 (button width)
+        grid_y_start = 150
+        button_width = 200
+        button_height = 80
+        for i in range(5):  # MAP 1 to MAP 5
+            row = i // 3
+            col = i % 3
+            x = grid_x_start + col * (button_width + 20)
+            y = grid_y_start + row * (button_height + 20)
             self.buttons.append(
-                AnimatedButton(
-                    (SCREEN_WIDTH - button_width) // 2,
-                    start_y + i * spacing,
-                    button_width,
-                    button_height,
-                    text,
-                    self.font
-                )
+                AnimatedButton(x, y, button_width, button_height, f"MAP {i+1}", self.font)
+            )
+        # Additional buttons below grid
+        extra_buttons = ["CUSTOM MAP", "CREATE MAP", "EXIT"]
+        for i, text in enumerate(extra_buttons):
+            x = (SCREEN_WIDTH - (len(extra_buttons) * (button_width + 20) - 20)) // 2 + i * (button_width + 20)
+            y = grid_y_start + 2 * (button_height + 20) + 50
+            self.buttons.append(
+                AnimatedButton(x, y, button_width, button_height, text, self.font)
             )
     
     def home_draw(self):
-        # Create atmospheric background
+        # Create atmospheric background with new color
         self.screen.fill(GameColors.BACKGROUND)
         
         # Draw animated particles
@@ -143,7 +149,7 @@ class EnhancedGraphic(Graphic):
         
         # Draw title
         title = self.victory.render("WUMPUS WORLD", True, GameColors.ACCENT)
-        title_rect = title.get_rect(centerx=SCREEN_WIDTH//2, top=20)
+        title_rect = title.get_rect(centerx=SCREEN_WIDTH//2, top=50)
         self.screen.blit(title, title_rect)
         
         # Draw animated buttons
@@ -151,7 +157,6 @@ class EnhancedGraphic(Graphic):
         for button in self.buttons:
             button.update(mouse_pos, 1/60)
             button.draw(self.screen)
-    
     def running_draw(self):
         self.screen.fill(GameColors.BACKGROUND)
         self.map.draw(self.screen)
@@ -160,38 +165,35 @@ class EnhancedGraphic(Graphic):
         score = self.agent.get_score()
         self.score_animation['target'] = score
         self.score_animation['current'] += (self.score_animation['target'] - 
-                                          self.score_animation['current']) * 0.1
+                                        self.score_animation['current']) * 0.1
         
-        # Draw modern HUD
+        # Draw modern HUD (score only)
         self._draw_hud()
         
+        # Draw action text at the bottom in white
+        if self.action_text:
+            print(f"Rendering action text: {self.action_text} with color (255, 255, 255)")  # Debug message
+            action_surf = self.noti.render(self.action_text, True, (255, 255, 255))  # Explicitly white
+            action_rect = action_surf.get_rect(bottom=SCREEN_HEIGHT - 10, centerx=SCREEN_WIDTH // 2)
+            self.screen.blit(action_surf, action_rect)
     def _draw_hud(self):
-        # Score panel at the top right
-        panel_rect = pygame.Rect(SCREEN_WIDTH - 250, 10, 240, 80)
-        pygame.draw.rect(self.screen, GameColors.PRIMARY, panel_rect, border_radius=10)
-        pygame.draw.rect(self.screen, GameColors.ACCENT, panel_rect, 2, border_radius=10)
-        
+        # Floating score text with shadow effect
         score_text = f"SCORE: {int(self.score_animation['current']):,}"
         score_surf = self.font.render(score_text, True, GameColors.TEXT_PRIMARY)
-        score_rect = score_surf.get_rect(center=panel_rect.center)
-        self.screen.blit(score_surf, score_rect)
         
-        # Status indicators
-        self._draw_status_indicators()
+        # Create shadow effect
+        shadow_surf = self.font.render(score_text, True, (50, 50, 50))
+        shadow_x, shadow_y = SCREEN_WIDTH - 260, 20
         
-    def _draw_status_indicators(self):
-        # Position directly below the score panel
-        indicators_rect = pygame.Rect(SCREEN_WIDTH - 250, 100, 240, 80)
-        pygame.draw.rect(self.screen, GameColors.PRIMARY, indicators_rect, border_radius=10)
-        pygame.draw.rect(self.screen, GameColors.ACCENT, indicators_rect, 2, border_radius=10)
+        # Blit shadow with offset
+        self.screen.blit(shadow_surf, (shadow_x + 2, shadow_y + 2))
         
-        # Adjust text position within the indicator rectangle
-        status_text = self.noti.render("STATUS: Active", True, GameColors.TEXT_SECONDARY)
-        text_pos = (indicators_rect.x + 10, indicators_rect.y + 20)
-        self.screen.blit(status_text, text_pos)
+        # Blit main score text
+        self.screen.blit(score_surf, (shadow_x, shadow_y))
     
     def win_draw(self):
         self.screen.fill(GameColors.BACKGROUND)
+        # self.screen.fill((135, 206, 235))
         
         # Create victory/defeat effects
         for _ in range(5):
@@ -241,18 +243,26 @@ class EnhancedGraphic(Graphic):
         return_button.update(pygame.mouse.get_pos(), 1/60)
         return_button.draw(self.screen)
 
-# Update the original game's display_action method with visual feedback
+
+
 def display_action(self, action: Algorithms.Action):
-    # Add visual feedback particles for actions
+    
     i, j = self.agent.get_pos()
-    # screen_x = j * CELL_SIZE + CELL_SIZE//2
-    # screen_y = i * CELL_SIZE + CELL_SIZE//2
     screen_x = j * 2 + 2
     screen_y = i * 2 + 2
     
     if action in [Algorithms.Action.MOVE_FORWARD, Algorithms.Action.GRAB_GOLD]:
         for _ in range(10):
             self.particles.create_particle(screen_x, screen_y, GameColors.ACCENT)
-            
-    # Call original display_action logic
+        self.action_text = "Grabbed Gold!" if action == Algorithms.Action.GRAB_GOLD else "Moved Forward"
+    elif action == Algorithms.Action.KILL_WUMPUS:
+        for _ in range(10):
+            self.particles.create_particle(screen_x, screen_y, GameColors.ACCENT)
+        self.action_text = "Killed Wumpus!"
+    elif action == Algorithms.Action.SHOOT:
+        self.action_text = "Shot Arrow!"
+    
+    self.running_draw()
+    pygame.display.update()
+    
     super().display_action(action)

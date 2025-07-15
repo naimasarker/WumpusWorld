@@ -4,7 +4,7 @@ import os
 from Map import *
 from Agent import *
 import Algorithms
-from Specification import *  # Ensure MAP_LIST and OUTPUT_LIST is accessible
+from Specification import *  
 
 class Graphic:
     def __init__(self):
@@ -62,85 +62,47 @@ class Graphic:
         MAP_LIST = Specification.MAP_LIST
         OUTPUT_LIST = Specification.OUTPUT_LIST
 
+
     def home_event(self):
-        global MAP_LIST, OUTPUT_LIST
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
                 sys.exit()
             elif event.type == pygame.MOUSEBUTTONDOWN:
-                # Check for regular maps
-                for i in range(len(MAP_LIST)):
-                    if 235 <= self.mouse[0] <= 735 and (120 + i*80) <= self.mouse[1] <= (170 + i*80):
-                        self.state = RUNNING
-                        self.map_i = i + 1
-                        return
-
-                # Check for custom map button
-                custom_map_y = 120 + len(MAP_LIST)*80
-                if 235 <= self.mouse[0] <= 735 and custom_map_y <= self.mouse[1] <= (custom_map_y + 50):
-                    # Check if custom map exists
-                    custom_map_path = os.path.join("Assets", "Input", "custom_map.txt")
-                    if os.path.exists(custom_map_path):
-                        self.state = RUNNING
-                        self.map_i = "custom"  # Special identifier for custom map
-                        return
-                    else:
-                        print("Custom map not found! Please create one first.")
-
-                # Create Map button
-                create_map_y = 120 + (len(MAP_LIST) + 1)*80
-                if 235 <= self.mouse[0] <= 735 and create_map_y <= self.mouse[1] <= (create_map_y + 50):
-                    # Get the directory where this script is located
-                    current_dir = os.path.dirname(os.path.abspath(__file__))
-                    map_editor_path = os.path.join(current_dir, 'map_editor.py')
-                    
-                    # Check if map_editor.py exists in the current directory
-                    if os.path.exists(map_editor_path):
-                        subprocess.call([sys.executable, map_editor_path])
-                    else:
-                        # Try the parent directory (in case it's in the root)
-                        parent_dir = os.path.dirname(current_dir)
-                        map_editor_path = os.path.join(parent_dir, 'map_editor.py')
-                        if os.path.exists(map_editor_path):
-                            subprocess.call([sys.executable, map_editor_path])
-                        else:
-                            print(f"Error: map_editor.py not found in {current_dir} or {parent_dir}")
+                mouse_pos = pygame.mouse.get_pos()
+                for i, button in enumerate(self.buttons):
+                    if button.rect.collidepoint(mouse_pos):
+                        if i < 5:  # MAP 1 to MAP 5
+                            self.state = RUNNING
+                            self.map_i = i + 1
                             return
-                    
-                    # Reload maps after editor closes
-                    self.reload_maps()
-
-                # Exit button
-                exit_y = 120 + (len(MAP_LIST) + 2)*80
-                if 235 <= self.mouse[0] <= 735 and exit_y <= self.mouse[1] <= (exit_y + 50):
-                    pygame.quit()
-                    sys.exit()
+                        elif i == 5:  # CUSTOM MAP
+                            custom_map_path = os.path.join("Assets", "Input", "custom_map.txt")
+                            if os.path.exists(custom_map_path):
+                                self.state = RUNNING
+                                self.map_i = "custom"
+                                return
+                            else:
+                                print("Custom map not found! Please create one first.")
+                        elif i == 6:  # CREATE MAP
+                            current_dir = os.path.dirname(os.path.abspath(__file__))
+                            map_editor_path = os.path.join(current_dir, 'map_editor.py')
+                            if os.path.exists(map_editor_path):
+                                subprocess.call([sys.executable, map_editor_path])
+                            else:
+                                parent_dir = os.path.dirname(current_dir)
+                                map_editor_path = os.path.join(parent_dir, 'map_editor.py')
+                                if os.path.exists(map_editor_path):
+                                    subprocess.call([sys.executable, map_editor_path])
+                                else:
+                                    print(f"Error: map_editor.py not found in {current_dir} or {parent_dir}")
+                                    return
+                            self.reload_maps()  # Reload maps after editor closes
+                        elif i == 7:  # EXIT
+                            pygame.quit()
+                            sys.exit()
 
         self.mouse = pygame.mouse.get_pos()
-
-        # Draw regular map buttons
-        for i in range(len(MAP_LIST)):
-            is_hover = 235 <= self.mouse[0] <= 735 and (120 + i*80) <= self.mouse[1] <= (170 + i*80)
-            self.draw_button(self.screen, pygame.Rect(235, 120 + i*80, 500, 50), is_hover, f"MAP {i+1}")
-
-        # Draw custom map button
-        custom_map_y = 120 + len(MAP_LIST)*80
-        custom_hover = 235 <= self.mouse[0] <= 735 and custom_map_y <= self.mouse[1] <= (custom_map_y + 50)
-        custom_map_exists = os.path.exists(os.path.join("Assets", "Input", "custom_map.txt"))
-        custom_text = "CUSTOM MAP" if custom_map_exists else "CUSTOM MAP (Not Found)"
-        self.draw_button(self.screen, pygame.Rect(235, custom_map_y, 500, 50), custom_hover, custom_text)
-
-        # Draw Create Map Button
-        create_map_y = 120 + (len(MAP_LIST) + 1)*80
-        create_hover = 235 <= self.mouse[0] <= 735 and create_map_y <= self.mouse[1] <= (create_map_y + 50)
-        self.draw_button(self.screen, pygame.Rect(235, create_map_y, 500, 50), create_hover, "Create Map")
-
-        # Draw Exit button
-        exit_y = 120 + (len(MAP_LIST) + 2)*80
-        exit_hover = 235 <= self.mouse[0] <= 735 and exit_y <= self.mouse[1] <= (exit_y + 50)
-        self.draw_button(self.screen, pygame.Rect(235, exit_y, 500, 50), exit_hover, "EXIT")
-
         pygame.display.update()
 
     def load_custom_map(self):
@@ -247,6 +209,8 @@ class Graphic:
                         if event.type == pygame.QUIT:
                             pygame.quit()
                             sys.exit()
+                        # elif event.type == pygame.USEREVENT:
+                        #     self.action_text = ""
 
             elif self.state == WIN or self.state == TRYBEST:
                 self.win_draw()
@@ -254,12 +218,12 @@ class Graphic:
 
             self.clock.tick(60)
 
-    # ... keep other methods (e.g., display_action) unchanged ...
-
+   
     def win_draw(self):
-        self.screen.fill(WHITE)
-        self.screen.blit(self.bg, (0, 0))
-
+        # Fill with new background color
+        self.screen.fill((135, 206, 235))  # Changed to new blue color
+        # self.screen.blit(self.bg, (0, 0))  # Comment out or remove background image if not needed
+        
         if self.state == WIN:
             text = self.victory.render('VICTORY!!!', True, BLACK)
         elif self.state == TRYBEST:
@@ -295,7 +259,7 @@ class Graphic:
             self.clock.tick(60)  # Maintain 60 FPS to keep the window responsive
 
     def display_action(self, action: Algorithms.Action):
-        # Keep the same implementation as before
+
         if action == Algorithms.Action.TURN_LEFT:
             self.direct = self.agent.turn_left()
             self.all_sprites.update()
@@ -305,7 +269,6 @@ class Graphic:
             self.wumpus.update(self.screen, self.noti, temp)
             self.pit.update(self.screen, self.noti, temp)
             pygame.display.update()
-        # ... rest of the method remains unchanged ...
         elif action == Algorithms.Action.TURN_RIGHT:
             self.direct = self.agent.turn_right()
             self.all_sprites.update()

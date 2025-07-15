@@ -174,11 +174,6 @@ class AgentBrain:
     def add_new_percepts_to_KB(self, cell):
         adj_cell_list = cell.get_adj_cell_list(self.cell_matrix)
 
-        # Note: Pit and Wumpus can not appear at the same cell.
-        # Hence: * If a cell has Pit, then it can not have Wumpus.
-        #        * If a cell has Wumpus, then it can not have Pit.
-
-        # PL: Pit?
         sign = '-'
         if cell.exist_pit():
             sign = '+'
@@ -194,24 +189,20 @@ class AgentBrain:
         self.KB.add_clause([cell.get_literal(Cell.Object.WUMPUS, sign)])
         sign_wumpus = sign
 
-        # Check the above constraint.
         if sign_pit == sign_wumpus == '+':
             raise TypeError('Logic Error: Pit and Wumpus can not appear at the same cell.')
 
-        # PL: Breeze?
+        
         sign = '-'
         if cell.exist_breeze():
             sign = '+'
         self.KB.add_clause([cell.get_literal(Cell.Object.BREEZE, sign)])
 
-        # PL: Stench?
         sign = '-'
         if cell.exist_stench():
             sign = '+'
         self.KB.add_clause([cell.get_literal(Cell.Object.STENCH, sign)])
 
-        # PL: This cell has Breeze iff At least one of all of adjacent cells has a Pit.
-        # B <=> Pa v Pb v Pc v Pd
         if cell.exist_breeze():
             # B => Pa v Pb v Pc v Pd
             clause = [cell.get_literal(Cell.Object.BREEZE, '-')]

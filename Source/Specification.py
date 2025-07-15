@@ -54,7 +54,8 @@ OUTPUT_LIST = [
 ]
 
 # Fonts
-FONT_MRSMONSTER = os.path.join(BASE_DIR, 'Assets', 'Fonts', 'mrsmonster.ttf')
+# FONT_MRSMONSTER = os.path.join(BASE_DIR, 'Assets', 'Fonts', 'mrsmonster.ttf')
+FONT_MRSMONSTER = os.path.join(BASE_DIR, 'Assets', 'Fonts', 'SuperShiny-0v0rG.ttf')
 
 # Colors
 WHITE = (255, 255, 255)
